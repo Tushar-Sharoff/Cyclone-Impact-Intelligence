@@ -33,7 +33,16 @@ def create_handler(repository: HistoricalTrackRepository, google_maps_api_key: s
             elif path == "/cyclones":
                 self.send_json(HTTPStatus.OK, repository.list_events())
             elif path == "/map-config":
-                self.send_json(HTTPStatus.OK, {"google_maps_api_key": google_maps_api_key})
+                key = google_maps_api_key or os.getenv("GOOGLE_MAPS_API_KEY") or None
+                if not key:
+                    try:
+                        from dotenv import dotenv_values
+                        env_file = Path(__file__).parents[2] / ".env"
+                        if env_file.is_file():
+                            key = dotenv_values(env_file).get("GOOGLE_MAPS_API_KEY") or None
+                    except Exception:
+                        pass
+                self.send_json(HTTPStatus.OK, {"google_maps_api_key": key})
             elif path.startswith("/cyclones/") and path.endswith("/forecast/metrics"):
                 self.send_available(forecast_repository.metrics(self.cyclone_id(path, "forecast/metrics")) if forecast_repository else None, "Forecast data is not configured")
             elif path.startswith("/cyclones/") and path.endswith("/forecast"):
